@@ -94,7 +94,7 @@ def get_data_with_condition(conditionDict):
     try:
         with sqlite3.connect('database.db') as conn:
             cur = conn.cursor()
-            sql_joined = """SELECT prj_id, age, sex, condition, treatment, response, sample_type, sample, time_from_treatment
+            sql_joined = """SELECT subjects.subj_id, prj_id, age, sex, condition, treatment, response, sample_type, sample, time_from_treatment
                         FROM subjects
                         INNER JOIN samples on subjects.subj_id = samples.subj_id
                         WHERE """
@@ -108,7 +108,7 @@ def get_data_with_condition(conditionDict):
             cur.execute(sql_joined, condition_sql)
             rows = cur.fetchall()
 
-            df = pd.DataFrame(rows, columns=['prj_id', 'age', 'sex', 'condition', 'treatment', 'response', 'sample_type', 'sample', 'time_from_treatment'])
+            df = pd.DataFrame(rows, columns=['subj_id', 'prj_id', 'age', 'sex', 'condition', 'treatment', 'response', 'sample_type', 'sample', 'time_from_treatment'])
             return df
 
     except sqlite3.OperationalError as e:
@@ -125,6 +125,8 @@ def statistical_comparison(summary_table, filtered_data):
     responders = df_merged[df_merged['response'] == 'yes']
     nonresponders = df_merged[df_merged['response'] == 'no']
 
+    test_results = []
+
     cell_types = ['b_cell', 'cd8_t_cell', 'cd4_t_cell', 'nk_cell', 'monocyte']
     for cell_type in cell_types:
         responders_filtered = responders[responders['population'] == cell_type]
@@ -132,7 +134,15 @@ def statistical_comparison(summary_table, filtered_data):
         box_plot(responders_filtered, nonresponders_filtered, cell_type)
 
         statistic, p_value = mannwhitneyu(responders_filtered['percentage'], nonresponders_filtered['percentage'], alternative='two-sided')
-        print(cell_type, p_value)
+        test_results.append({
+            'cell_type': cell_type,
+            'statistic': statistic,
+            'p_value': p_value
+        })
+    
+    test_results_df = pd.DataFrame(test_results)
+    test_results_df.to_csv("statistical_comparison_results.csv", index=False)
+    return test_results_df
 
 # Create box plots and save as PNG files
 def box_plot(responders, nonresponders, cell_type):
@@ -144,30 +154,35 @@ def box_plot(responders, nonresponders, cell_type):
     plt.grid(True)
     plt.savefig(cell_type+'_boxplot.png')
 
+# Subset analysis for part 4 
+def subset_analysis(query, name):
+    query.to_csv(name+".csv", index=False)
+
+    subset_results = {
+        'by_project': query.groupby('prj_id').size().to_dict(),
+        'by_response': query.groupby('response').size().to_dict(),
+        'by_gender': query.groupby('sex').size().to_dict()
+    }
+
+    return subset_results
+
 def main():
     # DB setup and summary table creation (Part 1 and 2)
     create_db("cell-count.csv")
     summary_table = create_summary()
-    print(summary_table)
+    print("Part 2: Summary Table\n", summary_table, "\n")
 
     # Part 3 - melanoma miraclib patient responses
     melanoma_miraclib_patients = get_data_with_condition({"condition": "melanoma", "treatment": "miraclib", "sample_type": "PBMC"})
-    statistical_comparison(summary_table, melanoma_miraclib_patients)
+    stat_results = statistical_comparison(summary_table, melanoma_miraclib_patients)
+    print("Part 3: Statistical Comparison Results\n", stat_results, "\n")
 
     # Part 4 - melanoma PBMC baseline from patients treated with miraclib
     query = get_data_with_condition({"condition": "melanoma", "treatment": "miraclib", "sample_type": "PBMC", "time_from_treatment": "0"})
-    print(query)
-    output_file = "melanoma_miraclib_baseline.csv"
-    query.to_csv(output_file, index=False)
-    
-    # samples from each project
-    print(query.groupby('prj_id').size())
+    print("Part 4: Data Subset\n", query, "\n")
+    results = subset_analysis(query, "melanoma_miraclib_baseline")
+    print(results)
 
-    # samples by response
-    print(query.groupby('response').size())
-
-    # samples by gender 
-    print(query.groupby('sex').size())
 
 if __name__ == "__main__":
     main()
