@@ -1,0 +1,5 @@
+matplotlib
+pandas 
+scipy
+sqlite3
+streamlit
