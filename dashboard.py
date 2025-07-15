@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import matplotlib.pyplot as plt
 import analysis
 
 summary_table = analysis.create_summary()
@@ -64,7 +65,19 @@ def Data_Subset_Analysis():
     st.write("#### Part 1 - Data Subset for Baseline Melanoma Patients Treated with Miraclib at Baseline")
     st.write(subset)
     st.write("#### Part 2 - Further Subset Analysis")
-    st.write(analysis.subset_analysis(subset, "melanoma_miraclib_baseline"))
+    by_categories = analysis.subset_analysis(subset, "melanoma_miraclib_baseline")
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.write("###### Samples by Project")
+        st.table(by_categories['by_project'])
+    with col2:
+        st.write("###### Subjects by Response")
+        st.table(by_categories['by_response'])
+    with col3:
+        st.write("###### Subjects by Gender")
+        st.table(by_categories['by_gender'])
 
 pg = st.navigation([Data_Overview, Statistical_Analysis, Data_Subset_Analysis], position="top")
 
