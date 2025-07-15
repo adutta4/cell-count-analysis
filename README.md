@@ -49,7 +49,7 @@ Based on the structure of the assignment, all Python code is contained in the fi
 
 - **box_plot(responders, nonresponders, cell_type)**: creates box plots to compare response types
 
-- **def subset_analysis(query, name)**: returns queries for project, gender, and responder differences
+- **subset_analysis(query, name)**: returns queries for project, gender, and responder differences
 
 The code is structured in this way both to provide clean, readable code, and in order to provide general useful functions that can be reused, or modified further for potential future applications. For example, while the statistical analysis for part 3 is contained in the `statistical_comparison` function and currently only runs the Mann-Whitney U Test, it can relatively easily be modified to accommodate different tests. Other functions, like `box_plot` and `get_data_with_condition` are also used multiple times.
 
